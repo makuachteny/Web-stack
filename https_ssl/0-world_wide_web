@@ -1,22 +1,27 @@
 #!/usr/bin/env bash
-# This Bash script logs information about domain names by performing DNS lookups.
-# If a subdomain is specified as the second argument, the script will look up that subdomain;
-# otherwise, it will look up four specific subdomains.
 
-# Define a function that performs the DNS lookups and outputs the results
-func () {
-    if [ -n "$2" ]; then
-        # If a specific subdomain is provided, look up that subdomain only
-        dig "$2.$1" | grep -A1 'ANSWER SECTION:' | paste - - | awk -v sd="$2" '{print "The subdomain " sd " is a " $7 " record and points to " $8}'
+function audit_domain {
+    domain=$1
+    subdomain=${2:-"all"}
+
+    if [[ $subdomain == "all" ]]; then
+        audit_subdomain "www"
+        audit_subdomain "lb-01"
+        audit_subdomain "web-01"
+        audit_subdomain "web-02"
     else
-        # If no subdomain is provided, look up four specific subdomains
-        dig "www.$1" | grep -A1 'ANSWER SECTION:' | paste - - | awk '{print "The subdomain www is a " $7 " record and points to " $8}'
-        dig "lb-01.$1" | grep -A1 'ANSWER SECTION:' | paste - - | awk '{print "The subdomain lb-01 is a " $7 " record and points to " $8}'
-        dig "web-01.$1" | grep -A1 'ANSWER SECTION:' | paste - - | awk '{print "The subdomain web-01 is a " $7 " record and points to " $8}'
-        dig "web-02.$1" | grep -A1 'ANSWER SECTION:' | paste - - | awk '{print "The subdomain web-02 is a " $7 " record and points to " $8}'
+        audit_subdomain $subdomain
     fi
 }
 
-# Call the function with the first and second command-line arguments as parameters
-func "$1" "$2"
+function audit_subdomain {
+    sub=$1
+    query_result=$(dig $sub.$domain +short)
+    if [[ -n $query_result ]]; then
+        destination=$(echo $query_result | awk '{print toupper($1)}')
+        echo "The subdomain $sub is an A record and points to $destination"
+    fi
+}
+
+audit_domain "$1" "$2"
 
