@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-#!/usr/bin/env bash
-#log information about domains name
+# Bash script of the log information about domains name
 func () {
     if [ -n "$2" ]
     then
